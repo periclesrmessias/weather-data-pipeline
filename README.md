@@ -2,374 +2,221 @@
 
 ## Overview
 
-This repository documents a data pipeline project that collects weather data (current conditions and forecasts) for the capitals of Brazilian states using the OpenWeatherMap API and Microsoft Azure infrastructure (Storage Account + Azure Functions). The pipeline automatically collects data via a timer trigger (every 5 minutes) and stores it as JSON files in an Azure Storage Account container for later analysis.
+This repository contains the code and documentation for a data pipeline that collects weather data (current conditions) for Brazilian state capitals using the OpenWeatherMap API and stores periodic snapshots in an Azure Storage Account via Azure Functions (Python).
+
+The implemented solution provides:
+
+* HTTP endpoints for manual data collection
+* A Timer Trigger for automatic, scheduled collection
+* JSON uploads to an Azure Blob Storage container named `weather-container`
+
+> Note: The Azure Functions code is implemented using the **decorator-based Python model** (`func.FunctionApp`), also known as the Python v2 programming model.
 
 ---
 
 ## Current Project Status
 
-**Successfully Implemented:**
-- ✅ OpenWeatherMap API integration
-- ✅ Automated data collection for Brazilian state capitals
-- ✅ JSON storage in Azure Storage Account (cloud-based)
-- ✅ Timer trigger automation (collects data every 5 minutes)
-- ✅ Complete local development environment
-- ✅ HTTP trigger for manual data collection
+* **Functions implemented and tested locally:** ✅
 
-**Current Limitation:**
-- ⚠️ The Azure Function runs **locally** (requires the development machine to be running)
-- ⚠️ Cloud deployment to Azure Function App encountered permission issues and was not completed
-- The pipeline is fully functional but not yet deployed to run independently in the cloud
-
-**Next Steps for Full Cloud Automation:**
-- Resolve Azure subscription permissions for Function App deployment
-- Complete the deployment using `func azure functionapp publish`
-- Configure Application Settings in Azure Portal
-- Verify timer trigger execution in the cloud environment
-
-The project demonstrates a complete, working data pipeline that successfully collects and stores weather data in the cloud. The only remaining step is migrating the function execution from local to cloud-based runtime for 24/7 autonomous operation.
+  * HTTP: `/api/collect/all` (CollectAllCapitals)
+  * HTTP: `/api/hello` (test endpoint)
+  * Timer: `AutoWeatherCollector` (automatic collection)
+* **Storage:** ✅ JSON files successfully uploaded to Azure Blob Storage (`weather-container`)
+* **Autonomous cloud execution:** ⚠️ **Not deployed** (cloud deployment not completed due to Azure subscription permission issues)
 
 ---
 
 ## Repository Structure
 
-* `functions/` — Azure Function source code (Python)
+* `function_app.py` — Main Azure Functions implementation using `func.FunctionApp()`
 * `requirements.txt` — Project dependencies
-* `.gitignore` — Standard exclusions, including `local.settings.json` and `.venv`
-* `README.md` — This document
-* `docs/` — Additional documentation, scripts, and instructions
+* `.gitignore` — Recommended exclusions (including `local.settings.json`)
+* `docs/` — Additional documentation (optional)
+* `README.md` — This file
 
 ---
 
-## Prerequisites
+## Execution Details (Based on Current Code)
 
-* An OpenWeatherMap account (to obtain an API key)
-* A Microsoft Azure account with permission to create resources (Resource Group, Storage Account)
-* Visual Studio Code with the Azure Functions extension installed
-* Azure Functions Core Tools installed locally
-* Python 3.10+ (compatible with the Azure Functions Python runtime)
-* (Optional for cloud deployment) Azure CLI installed
+### Implementation Model
 
----
+* This project uses the **Azure Functions Python decorator-based model**.
+* It does **not** use the classic per-function folder structure (`<function_name>/__init__.py` + `function.json`).
+* Functions defined in the code:
 
-## 1. Create an OpenWeatherMap Account
+  * `CollectAllCapitals` — HTTP-triggered function (`route="collect/all"`)
+  * `AutoWeatherCollector` — Timer-triggered function
+  * `hello` — Simple HTTP test endpoint
 
-1. Go to [https://openweathermap.org](https://openweathermap.org) and create an account (or sign in)
-2. In the user dashboard, navigate to **API keys** and generate a new key
-3. Store the key securely. It will be used in API requests to retrieve current weather data and forecasts
+### Environment Variables (Exact Names Used in Code)
 
-> **Important:** Keep the API key secure and **never** commit it to a public repository. Use environment variables or secret management services (e.g., Azure Key Vault).
+The application reads the following environment variables. The names are **case-sensitive** and must match exactly:
 
----
+* `OpenWeather_ApiKey` — OpenWeatherMap API key
+* `AzureWebJobsStorage` — Azure Storage Account connection string (used directly by `BlobServiceClient.from_connection_string`)
 
-## 2. Create Azure Resources
-
-**Main steps:**
-
-1. Create a Microsoft/Azure account if you do not already have one
-2. In the Azure Portal, create a **Resource Group** to organize the project resources
-3. Create a **Storage Account** (StorageV2 is recommended) within the Resource Group
-4. Inside the Storage Account, create a **container** (e.g., `capitals`) to store the JSON blobs generated by the pipeline
-5. Navigate to **Security + Networking → Access Keys** in your Storage Account
-6. Copy the **Connection String** from Key1 (you'll need this for local development)
-
-> **Security Note:** Do not hardcode the connection string in source code. Use environment variables in local development and Application Settings in production.
+> Note: The code does **not** use `AZURE_STORAGE_CONNECTION_STRING`; the Storage connection relies entirely on `AzureWebJobsStorage`.
 
 ---
 
-## 3. Security Best Practices
+## HTTP Endpoints
 
-* **Do not** commit `local.settings.json` or any file containing `AccountKey`, `ConnectionString`, or the OpenWeatherMap API key
-* Use a `.env.example` file with placeholders and setup instructions for local development
-* In production (Function App), store secrets in **Application Settings** or **Azure Key Vault**
+* `GET /api/hello`
 
-**Example minimal `.gitignore`:**
+  * Test endpoint
+  * Returns: `Azure Functions está funcionando!`
 
+* `GET /api/collect/all`
+
+  * Triggers synchronous collection of all configured Brazilian capitals
+  * Returns a JSON summary with per-city status, blob path, and basic weather fields
+
+---
+
+## Timer Trigger Configuration
+
+* **Function name:** `AutoWeatherCollector`
+* **CRON schedule:** `0 */10 * * * *`
+* **Execution frequency:** Every 10 minutes
+
+The timer runs independently of HTTP requests and stores its output in the same Blob Storage container.
+
+---
+
+## Storage Behavior
+
+* **Target container:** `weather-container` (must exist prior to execution)
+* **Blob path patterns:**
+
+  * HTTP trigger:
+
+    ```
+    capitais-batch/{city_formatted}/{YYYYMMDD_HHMMSS}.json
+    ```
+  * Timer trigger:
+
+    ```
+    timer-auto/{city_formatted}/{YYYYMMDD_HHMMSS}.json
+    ```
+
+### Stored JSON Structure
+
+Each blob contains a snapshot similar to:
+
+```json
+{
+  "extraction_timestamp": "2025-01-20T15:30:00Z",
+  "source_system": "OpenWeatherMap",
+  "city_requested": "Brasília",
+  "weather_data": { /* raw OpenWeatherMap API response */ }
+}
 ```
-.venv/
-local.settings.json
-__pycache__/
-.env
-*.pyc
-```
+
+**Timestamp behavior:**
+
+* Blob filenames use `datetime.now()` (local time of the execution host)
+* The `extraction_timestamp` field uses `datetime.utcnow()` with `Z` suffix (UTC)
 
 ---
 
-## 4. Local Development — Azure Functions (Python)
+## List of Capitals
 
-### 4.1 Set up the Local Environment
+The pipeline collects data for 27 Brazilian capitals (one per federative unit, including the Federal District). The list is hardcoded in the application (`capitais_brasil`) and must be updated in code if changes are required.
 
-```bash
-# Windows (PowerShell)
-python -m venv .venv
-.venv\Scripts\activate
-pip install --upgrade pip
-pip install -r requirements.txt
-```
+---
 
-**Required packages** (add to `requirements.txt`):
+## API Rate Limiting Considerations
+
+* The code enforces a delay of `1.2` seconds between API calls using `time.sleep(1.2)`.
+* This is intended to reduce the risk of exceeding OpenWeatherMap rate limits.
+* Actual limits depend on the OpenWeatherMap subscription plan (Free vs. Paid).
+
+---
+
+## Dependencies
+
+Required packages (as listed in `requirements.txt`):
+
 ```
 azure-functions
 azure-storage-blob
 requests
 ```
 
-### 4.2 Install Azure Functions Core Tools
+Recommended Python version: **3.10+** (compatible with the Azure Functions Python runtime).
 
-Install Azure Functions Core Tools following the [official instructions](https://docs.microsoft.com/azure/azure-functions/functions-run-local) for your operating system.
+---
 
-### 4.3 Initialize the Azure Functions Project
+## Local Execution
 
-```bash
-# Inside the project directory
-func init . --worker-runtime python
-func new --name getweather --template "HTTP trigger" --authlevel "anonymous"
-# Add a timer trigger for automation:
-func new --name timer_getweather --template "Timer trigger"
+### 1. Create and Activate a Virtual Environment (example: Windows PowerShell)
+
+```powershell
+python -m venv .venv
+.venv\Scripts\activate
+pip install --upgrade pip
+pip install -r requirements.txt
 ```
 
-> **Note:** During development, you may need to temporarily disable the timer trigger to test the HTTP trigger in isolation if VS Code creates duplicate functions.
+### 2. Configure Local Settings
 
-### 4.4 Configure Local Settings
-
-Create a `local.settings.json` file (this file should be in `.gitignore`):
+Create a `local.settings.json` file (do **not** commit it):
 
 ```json
 {
   "IsEncrypted": false,
   "Values": {
-    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "AzureWebJobsStorage": "<your-storage-connection-string>",
     "FUNCTIONS_WORKER_RUNTIME": "python",
-    "OPENWEATHER_API_KEY": "your-openweathermap-api-key-here",
-    "AZURE_STORAGE_CONNECTION_STRING": "your-storage-account-connection-string-here"
+    "OpenWeather_ApiKey": "<your-openweathermap-api-key>"
   }
 }
 ```
 
-### 4.5 Basic Function Structure
-
-**Example `function_app.py` outline:**
-
-```python
-import logging
-import os
-import json
-from datetime import datetime
-import requests
-from azure.storage.blob import BlobServiceClient
-import azure.functions as func
-
-app = func.FunctionApp()
-
-@app.route(route="getweather", auth_level=func.AuthLevel.ANONYMOUS)
-def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
-    """HTTP trigger for manual weather data collection"""
-    api_key = os.getenv("OPENWEATHER_API_KEY")
-    connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
-    
-    # Collect weather data from OpenWeatherMap API
-    # Upload JSON to blob container using BlobServiceClient
-    
-    return func.HttpResponse("Weather data collected successfully", status_code=200)
-
-@app.schedule(schedule="0 */5 * * * *", arg_name="timer", run_on_startup=False)
-def timer_trigger(timer: func.TimerRequest) -> None:
-    """Timer trigger - runs every 5 minutes"""
-    logging.info('Timer trigger function started')
-    
-    # Same collection logic as HTTP trigger
-    # Upload JSON to blob container
-    
-    logging.info('Timer trigger function completed')
-```
-
-**Important:** Implement proper error handling, retries, and logging in your production code.
-
----
-
-## 5. Local Testing
-
-1. Activate the virtual environment:
-   ```bash
-   .venv\Scripts\activate
-   ```
-
-2. Start the Azure Functions runtime:
-   ```bash
-   func start
-   ```
-
-3. Test the HTTP endpoint:
-   - The function will display a local URL (e.g., `http://localhost:7071/api/getweather`)
-   - Navigate to this URL in your browser or use a tool like Postman/curl
-
-4. Verify timer trigger:
-   - The timer will execute automatically every 5 minutes
-   - Check the terminal logs for execution confirmation
-   - Verify JSON files are being created in your Azure Storage container
-
-5. Check Azure Storage:
-   - Navigate to your Storage Account in Azure Portal
-   - Open the `capitals` container
-   - Verify that JSON files are being uploaded successfully
-
-**Troubleshooting:**
-- If VS Code created duplicate functions, check the project folder structure and temporarily remove unwanted triggers
-- Verify your `local.settings.json` contains the correct API key and connection string
-- Check Azure Storage firewall settings if uploads fail
-
----
-
-## 6. Timer Trigger Schedule Configuration
-
-The timer trigger uses Azure Functions CRON expressions to run every 5 minutes:
-
-```
-"schedule": "0 */5 * * * *"
-```
-
-**CRON format:** `{second} {minute} {hour} {day} {month} {day-of-week}`
-
-Examples:
-- Every 5 minutes: `0 */5 * * * *`
-- Every hour: `0 0 * * * *`
-- Every day at midnight: `0 0 0 * * *`
-
----
-
-## 7. Cloud Deployment (In Progress)
-
-> **Status:** This section documents the intended deployment process. Due to Azure subscription permission issues, cloud deployment was not completed. The function currently runs successfully in local mode with full functionality.
-
-### 7.1 Prerequisites for Cloud Deployment
-
-1. Install and configure Azure CLI
-2. Run `az login` in terminal
-3. Verify you have appropriate permissions (Owner or Contributor role) on the subscription or resource group
-
-### 7.2 Deployment Steps (For Future Implementation)
+### 3. Run the Function App Locally
 
 ```bash
-# Login to Azure
-az login
-
-# Publish the Function App
-func azure functionapp publish <YOUR_FUNCTION_APP_NAME>
+func start
 ```
 
-### 7.3 Configure Application Settings in Azure Portal
+### 4. Test Endpoints
 
-After deployment, add these settings to your Function App:
-- `OPENWEATHER_API_KEY`: Your OpenWeatherMap API key
-- `AZURE_STORAGE_CONNECTION_STRING`: Your Storage Account connection string
+* `http://localhost:7071/api/hello`
+* `http://localhost:7071/api/collect/all`
 
-### 7.4 Known Issues Encountered
-
-- **Permission errors:** Requires Owner or Contributor role on the subscription
-- **Account configuration:** Initial account setup with personal email caused complications; Microsoft organizational account recommended
-- **Role assignments:** Multiple role changes were required before obtaining sufficient permissions
-
-**Recommendation:** Ensure proper Azure permissions before attempting deployment, or use a Microsoft organizational account from the start.
+Verify that JSON files are being created in the `weather-container` container.
 
 ---
 
-## 8. Data Structure
+## Security Notes
 
-The pipeline collects weather data and stores it in JSON format. Each file represents a snapshot of weather conditions at the time of collection.
+* **HTTP authorization:** The `FunctionApp` is initialized with `http_auth_level=func.AuthLevel.ANONYMOUS`, meaning all HTTP endpoints are publicly accessible.
+* **Secrets management:** Never commit API keys or connection strings. Use Application Settings in Azure and/or Azure Key Vault for production deployments.
 
-**Example JSON structure:**
-```json
-{
-  "city": "Brasília",
-  "state": "DF",
-  "timestamp": "2025-01-20T15:30:00Z",
-  "temperature": 28.5,
-  "humidity": 65,
-  "pressure": 1013,
-  "weather_description": "clear sky",
-  "wind_speed": 3.5
-}
+---
+
+## Deployment Notes
+
+* Deployment can be performed using:
+
+```bash
+func azure functionapp publish <FUNCTION_APP_NAME>
 ```
 
-Files are named with timestamps to facilitate chronological analysis and prevent overwriting.
+* The deploying identity must have sufficient permissions (Owner or Contributor) on the Azure subscription or resource group.
+* Cloud deployment is currently not completed due to permission constraints.
 
 ---
 
-## 9. Recommended Next Steps
+## Final Notes
 
-### For Completing Cloud Deployment:
-- Resolve Azure subscription permissions
-- Create Function App in Azure Portal
-- Deploy using `func azure functionapp publish`
-- Monitor with Application Insights
-
-### For Enhanced Security:
-- Migrate secrets to **Azure Key Vault**
-- Implement managed identities for authentication
-- Enable Azure Monitor and configure alerts
-
-### For CI/CD Pipeline:
-- Set up GitHub Actions for automated deployment
-- Implement automated testing
-- Add deployment staging environments
-
-### For Data Processing:
-- Implement data transformation logic (ETL → ELT)
-- Add data validation and quality checks
-- Create aggregation and analysis functions
-- Set up a database for processed data
-
-### For API Optimization:
-- Implement caching to reduce API calls
-- Monitor OpenWeatherMap API limits
-- Add retry logic with exponential backoff
-- Batch requests where possible
-
----
-
-## 10. Troubleshooting
-
-**Issue:** Duplicate functions created by VS Code
-- **Solution:** Check project folder structure, remove duplicate function definitions, adjust `local.settings.json`
-
-**Issue:** Azure Storage upload fails
-- **Solution:** Verify connection string is correct, check Storage Account firewall rules, ensure container exists
-
-**Issue:** Timer trigger not executing
-- **Solution:** Verify CRON expression syntax, check that `run_on_startup` is set appropriately, review function logs
-
-**Issue:** Azure deployment permission errors
-- **Solution:** Verify you have Owner or Contributor role, check subscription access, ensure account invitations are accepted
-
-**Issue:** OpenWeatherMap API returning errors
-- **Solution:** Verify API key is valid, check rate limits haven't been exceeded, ensure city names are correct
-
----
-
-## Contributing
-
-Feel free to open issues or pull requests. For local testing:
-1. Clone the repository
-2. Create `local.settings.json` with your credentials (never commit this file)
-3. Follow the setup instructions in section 4
-4. Test locally before submitting changes
+* Ensure the `weather-container` container exists before execution.
+* Confirm that `AzureWebJobsStorage` points to the correct Storage Account.
+* Review OpenWeatherMap rate limits when adjusting the timer schedule or the number of cities.
+* Timestamp handling intentionally mixes local time (filenames) and UTC (payload metadata), as implemented in the code.
 
 ---
 
 ## License
 
-[Choose an appropriate license - MIT, Apache 2.0, etc.]
-
----
-
-## Acknowledgments
-
-- OpenWeatherMap for providing the weather data API
-- Microsoft Azure for cloud infrastructure
-- Azure Functions documentation and community
-
----
-
-## Contact
-
-[Your contact information or links to your professional profiles]
+Add an appropriate license (e.g., MIT or Apache-2.0) before publishing the repository.
