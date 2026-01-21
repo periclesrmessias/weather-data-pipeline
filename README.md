@@ -119,7 +119,7 @@ capitals/
     └── ...
 ```
 
-![Azure Storage Folders]([https://github.com/periclesrmessias/weather_data/blob/main/images/jsons.png?raw=true))
+![Azure Storage Folders](https://github.com/periclesrmessias/weather_data/blob/main/images/jsons.png?raw=true)
 
 ---
 
@@ -208,6 +208,8 @@ requests
 4. Copy the **Connection String** from Key1
 5. Create a container named `weather-container`
 
+![Azure Container](https://github.com/periclesrmessias/weather_data/blob/main/images/capitals.png?raw=true)
+
 ### 5. Configure Environment Variables
 
 Create the `local.settings.json` file:
@@ -225,7 +227,7 @@ Create the `local.settings.json` file:
 
 > ⚠️ **IMPORTANT**: Never commit this file! It's already in `.gitignore`
 
-![Project Structure]([docs/images/project-structure.png](https://github.com/periclesrmessias/weather_data/blob/main/images/files.png?raw=true))
+![Project Structure](https://github.com/periclesrmessias/weather_data/blob/main/images/files.png?raw=true)
 
 ---
 
@@ -241,7 +243,7 @@ Create the `local.settings.json` file:
 func start
 ```
 
-![Function Execution Logs]([docs/images/function-execution-logs.png](https://github.com/periclesrmessias/weather_data/blob/main/images/func-start.png?raw=true))
+![Function Execution Logs](https://github.com/periclesrmessias/weather_data/blob/main/images/func-start.png?raw=true)
 
 ### Test Endpoints
 
