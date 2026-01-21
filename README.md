@@ -27,6 +27,8 @@
 
 This project implements a **real-time data pipeline** that automatically collects weather information from all 26 Brazilian state capitals using the OpenWeatherMap API. Data is processed and stored in JSON format in Azure Blob Storage, creating a data lake for future analysis.
 
+**Current Status:** The pipeline is fully functional and runs successfully in local development mode. All features work as intended, including automated data collection via timer trigger and manual collection via HTTP endpoints. Cloud deployment to Azure Function App was attempted but not completed due to Azure subscription permission challenges.
+
 ### Project Goals
 
 - ✅ Automate weather data collection at regular intervals
@@ -103,7 +105,7 @@ Manual data collection from all capitals on demand.
 ### 🗂️ Storage Structure
 
 ```
-weather-container/
+capitals/
 ├── capitais-batch/
 │   ├── rio-branco/
 │   │   └── 20250121_183000.json
@@ -116,6 +118,8 @@ weather-container/
     │   └── 20250121_181000.json
     └── ...
 ```
+
+![Azure Storage Folders](docs/images/azure-storage-folders.png)
 
 ---
 
@@ -204,9 +208,6 @@ requests
 4. Copy the **Connection String** from Key1
 5. Create a container named `weather-container`
 
-(https://github.com/periclesrmessias/weather_data/blob/main/images/capitals.png?raw=true)
-
-
 ### 5. Configure Environment Variables
 
 Create the `local.settings.json` file:
@@ -224,6 +225,8 @@ Create the `local.settings.json` file:
 
 > ⚠️ **IMPORTANT**: Never commit this file! It's already in `.gitignore`
 
+![Project Structure](docs/images/project-structure.png)
+
 ---
 
 ## 🚀 Local Execution
@@ -237,6 +240,8 @@ Create the `local.settings.json` file:
 # Start Azure Functions runtime
 func start
 ```
+
+![Function Execution Logs](docs/images/function-execution-logs.png)
 
 ### Test Endpoints
 
@@ -380,7 +385,7 @@ logging.error(f"❌ API error for {city}: {error}")
 ### Visualization in Azure
 
 1. Access the **Azure Portal**
-2. Navigate to **Storage Account** → **Containers** → `weather-container`
+2. Navigate to **Storage Account** (e.g., `apiweatherdata`) → **Containers** → `capitals`
 3. Explore the hierarchical folder structure
 4. Download individual JSON files for inspection
 
@@ -390,15 +395,25 @@ logging.error(f"❌ API error for {city}: {error}")
 
 ### 1. **Character Encoding**
 
-**Problem:** City names with accents (São Paulo, Brasília)
+**Problem:** City names with accents (São Paulo, Brasília, Maceió, Belém)
 
 **Solution:**
 ```python
-cidade_formatada = cidade.lower().replace(' ', '-').replace('ã', 'a').replace('ç', 'c')
+cidade_formatada = cidade.lower().replace(' ', '-').replace('ã', 'a').replace('ç', 'c').replace('ó', 'o').replace('é', 'e')
 # "São Paulo" → "sao-paulo"
+# "Maceió" → "maceio"
 ```
 
-### 2. **API Rate Limiting**
+### 2. **VS Code Creating Duplicate Functions**
+
+**Problem:** VS Code automatically created a duplicate `getweather` function during project initialization
+
+**Solution:**
+- Removed the timer trigger temporarily to test HTTP trigger in isolation
+- Consolidated all functions into a single `function_app.py`
+- Tested each trigger independently before combining them
+
+### 3. **API Rate Limiting**
 
 **Problem:** OpenWeatherMap limits 60 requests/minute on Free plan
 
@@ -431,7 +446,8 @@ time.sleep(1.2)  # Ensures maximum 50 req/min
 
 ### Short Term
 
-- [ ] **Cloud Deploy**: Migrate execution to Azure Function App
+- [ ] **Cloud Deploy**: Resolve Azure subscription permissions and deploy to Azure Function App
+- [ ] **Timer Optimization**: Adjust timer trigger schedule based on data analysis needs
 - [ ] **CI/CD Pipeline**: Implement GitHub Actions for automated deployment
 - [ ] **Unit Tests**: Code coverage with pytest
 - [ ] **API Documentation**: Swagger/OpenAPI specification
