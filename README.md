@@ -119,7 +119,7 @@ capitals/
     └── ...
 ```
 
-![Azure Storage Folders](docs/images/azure-storage-folders.png)
+![Azure Storage Folders]([https://github.com/periclesrmessias/weather_data/blob/main/images/jsons.png?raw=true))
 
 ---
 
@@ -225,7 +225,7 @@ Create the `local.settings.json` file:
 
 > ⚠️ **IMPORTANT**: Never commit this file! It's already in `.gitignore`
 
-![Project Structure](docs/images/project-structure.png)
+![Project Structure]([docs/images/project-structure.png](https://github.com/periclesrmessias/weather_data/blob/main/images/files.png?raw=true))
 
 ---
 
@@ -241,7 +241,7 @@ Create the `local.settings.json` file:
 func start
 ```
 
-![Function Execution Logs](docs/images/function-execution-logs.png)
+![Function Execution Logs]([docs/images/function-execution-logs.png](https://github.com/periclesrmessias/weather_data/blob/main/images/func-start.png?raw=true))
 
 ### Test Endpoints
 
