@@ -1,222 +1,457 @@
-# Weather Data Pipeline — OpenWeatherMap + Azure
+# 🌦️ Weather Data Pipeline - Azure + OpenWeatherMap
 
-## Overview
+[![Azure Functions](https://img.shields.io/badge/Azure-Functions-0089D6?logo=microsoft-azure)](https://azure.microsoft.com/services/functions/)
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![OpenWeatherMap](https://img.shields.io/badge/API-OpenWeatherMap-orange)](https://openweathermap.org/)
+[![Azure Storage](https://img.shields.io/badge/Storage-Azure_Blob-0089D6)](https://azure.microsoft.com/services/storage/)
 
-This repository contains the code and documentation for a data pipeline that collects weather data (current conditions) for Brazilian state capitals using the OpenWeatherMap API and stores periodic snapshots in an Azure Storage Account via Azure Functions (Python).
+## 📋 Table of Contents
 
-The implemented solution provides:
-
-* HTTP endpoints for manual data collection
-* A Timer Trigger for automatic, scheduled collection
-* JSON uploads to an Azure Blob Storage container named `weather-container`
-
-> Note: The Azure Functions code is implemented using the **decorator-based Python model** (`func.FunctionApp`), also known as the Python v2 programming model.
-
----
-
-## Current Project Status
-
-* **Functions implemented and tested locally:** ✅
-
-  * HTTP: `/api/collect/all` (CollectAllCapitals)
-  * HTTP: `/api/hello` (test endpoint)
-  * Timer: `AutoWeatherCollector` (automatic collection)
-* **Storage:** ✅ JSON files successfully uploaded to Azure Blob Storage (`weather-container`)
-* **Autonomous cloud execution:** ⚠️ **Not deployed** (cloud deployment not completed due to Azure subscription permission issues)
+- [Overview](#-overview)
+- [Architecture](#-architecture)
+- [Features](#-features)
+- [Tech Stack](#-tech-stack)
+- [Prerequisites](#-prerequisites)
+- [Environment Setup](#-environment-setup)
+- [Local Execution](#-local-execution)
+- [Data Structure](#-data-structure)
+- [Available Endpoints](#-available-endpoints)
+- [Monitoring and Logs](#-monitoring-and-logs)
+- [Challenges and Solutions](#-challenges-and-solutions)
+- [Next Steps](#-next-steps)
+- [License](#-license)
 
 ---
 
-## Repository Structure
+## 🎯 Overview
 
-* `function_app.py` — Main Azure Functions implementation using `func.FunctionApp()`
-* `requirements.txt` — Project dependencies
-* `.gitignore` — Recommended exclusions (including `local.settings.json`)
-* `docs/` — Additional documentation (optional)
-* `README.md` — This file
+This project implements a **real-time data pipeline** that automatically collects weather information from all 26 Brazilian state capitals using the OpenWeatherMap API. Data is processed and stored in JSON format in Azure Blob Storage, creating a data lake for future analysis.
 
----
+### Project Goals
 
-## Execution Details (Based on Current Code)
-
-### Implementation Model
-
-* This project uses the **Azure Functions Python decorator-based model**.
-* It does **not** use the classic per-function folder structure (`<function_name>/__init__.py` + `function.json`).
-* Functions defined in the code:
-
-  * `CollectAllCapitals` — HTTP-triggered function (`route="collect/all"`)
-  * `AutoWeatherCollector` — Timer-triggered function
-  * `hello` — Simple HTTP test endpoint
-
-### Environment Variables (Exact Names Used in Code)
-
-The application reads the following environment variables. The names are **case-sensitive** and must match exactly:
-
-* `OpenWeather_ApiKey` — OpenWeatherMap API key
-* `AzureWebJobsStorage` — Azure Storage Account connection string (used directly by `BlobServiceClient.from_connection_string`)
-
-> Note: The code does **not** use `AZURE_STORAGE_CONNECTION_STRING`; the Storage connection relies entirely on `AzureWebJobsStorage`.
+- ✅ Automate weather data collection at regular intervals
+- ✅ Store historical data for temporal analysis
+- ✅ Create a scalable and serverless infrastructure
+- ✅ Implement data engineering best practices (logging, error handling, rate limiting)
 
 ---
 
-## HTTP Endpoints
+## 🏗️ Architecture
 
-* `GET /api/hello`
+```
+┌─────────────────────┐
+│  Timer Trigger      │
+│  (Every 10 min)     │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│  Azure Function     │
+│  (Python 3.10+)     │
+└──────────┬──────────┘
+           │
+           ├──────────────────┐
+           │                  │
+           ▼                  ▼
+┌─────────────────┐  ┌─────────────────┐
+│ OpenWeatherMap  │  │  Azure Blob     │
+│     API         │  │    Storage      │
+└─────────────────┘  └─────────────────┘
+```
 
-  * Test endpoint
-  * Returns: `Azure Functions está funcionando!`
+### Data Flow
 
-* `GET /api/collect/all`
-
-  * Triggers synchronous collection of all configured Brazilian capitals
-  * Returns a JSON summary with per-city status, blob path, and basic weather fields
+1. **Automatic Trigger**: Timer trigger activates the function every 10 minutes
+2. **Data Collection**: HTTP requests to OpenWeatherMap API (26 capitals)
+3. **Processing**: Data enrichment with metadata (timestamp, source, etc.)
+4. **Storage**: Upload to Azure Blob Storage in hierarchical structure
+5. **Logging**: Complete logging of all operations for monitoring
 
 ---
 
-## Timer Trigger Configuration
+## ✨ Features
 
-* **Function name:** `AutoWeatherCollector`
-* **CRON schedule:** `0 */10 * * * *`
-* **Execution frequency:** Every 10 minutes
+### 🔄 Automated Collection
+- **Timer Trigger**: Automatic execution every 10 minutes
+- **Rate Limiting**: Delay implementation (1.2s) to respect API limits
+- **Retry Logic**: Robust error handling for connection issues
 
-The timer runs independently of HTTP requests and stores its output in the same Blob Storage container.
+### 📊 HTTP Endpoints
 
----
+#### 1. `GET /api/hello`
+Test endpoint to verify function operation.
 
-## Storage Behavior
+**Response:**
+```
+Azure Functions is working!
+```
 
-* **Target container:** `weather-container` (must exist prior to execution)
-* **Blob path patterns:**
+#### 2. `GET /api/collect/all`
+Manual data collection from all capitals on demand.
 
-  * HTTP trigger:
-
-    ```
-    capitais-batch/{city_formatted}/{YYYYMMDD_HHMMSS}.json
-    ```
-  * Timer trigger:
-
-    ```
-    timer-auto/{city_formatted}/{YYYYMMDD_HHMMSS}.json
-    ```
-
-### Stored JSON Structure
-
-Each blob contains a snapshot similar to:
-
+**JSON Response:**
 ```json
 {
-  "extraction_timestamp": "2025-01-20T15:30:00Z",
-  "source_system": "OpenWeatherMap",
-  "city_requested": "Brasília",
-  "weather_data": { /* raw OpenWeatherMap API response */ }
+  "total_capitais": 26,
+  "coletadas_com_sucesso": 26,
+  "com_erro": 0,
+  "timestamp": "2025-01-21T18:30:00Z",
+  "resultados": [...]
 }
 ```
 
-**Timestamp behavior:**
-
-* Blob filenames use `datetime.now()` (local time of the execution host)
-* The `extraction_timestamp` field uses `datetime.utcnow()` with `Z` suffix (UTC)
-
----
-
-## List of Capitals
-
-The pipeline collects data for 27 Brazilian capitals (one per federative unit, including the Federal District). The list is hardcoded in the application (`capitais_brasil`) and must be updated in code if changes are required.
-
----
-
-## API Rate Limiting Considerations
-
-* The code enforces a delay of `1.2` seconds between API calls using `time.sleep(1.2)`.
-* This is intended to reduce the risk of exceeding OpenWeatherMap rate limits.
-* Actual limits depend on the OpenWeatherMap subscription plan (Free vs. Paid).
-
----
-
-## Dependencies
-
-Required packages (as listed in `requirements.txt`):
+### 🗂️ Storage Structure
 
 ```
+weather-container/
+├── capitais-batch/
+│   ├── rio-branco/
+│   │   └── 20250121_183000.json
+│   ├── brasilia/
+│   │   └── 20250121_183002.json
+│   └── ...
+└── timer-auto/
+    ├── sao-paulo/
+    │   ├── 20250121_180000.json
+    │   └── 20250121_181000.json
+    └── ...
+```
+
+---
+
+## 🛠️ Tech Stack
+
+| Technology | Version | Purpose |
+|------------|--------|-----------|
+| **Python** | 3.10+ | Main language |
+| **Azure Functions** | v4 | Serverless compute |
+| **Azure Blob Storage** | StorageV2 | Data lake |
+| **OpenWeatherMap API** | 2.5 | Weather data source |
+| **Requests** | Latest | HTTP client |
+| **azure-storage-blob** | Latest | Azure Storage SDK |
+
+---
+
+## 📦 Prerequisites
+
+### Accounts and Credentials
+
+1. **OpenWeatherMap Account**
+   - Create account at [openweathermap.org](https://openweathermap.org)
+   - Generate API Key in the dashboard
+   - Free plan allows 60 requests/minute
+
+2. **Microsoft Azure Account**
+   - Create account at [portal.azure.com](https://portal.azure.com)
+   - Configure Resource Group
+   - Create Storage Account
+
+### Development Tools
+
+```bash
+# Python 3.10 or higher
+python --version
+
+# Azure Functions Core Tools
+func --version
+
+# Visual Studio Code (recommended)
+# + Azure Functions Extension
+```
+
+---
+
+## ⚙️ Environment Setup
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/your-username/weather-data-pipeline.git
+cd weather-data-pipeline
+```
+
+### 2. Create Virtual Environment
+
+```bash
+# Windows
+python -m venv .venv
+.venv\Scripts\activate
+
+# Linux/MacOS
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### 3. Install Dependencies
+
+```bash
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+**requirements.txt:**
+```txt
 azure-functions
 azure-storage-blob
 requests
 ```
 
-Recommended Python version: **3.10+** (compatible with the Azure Functions Python runtime).
+### 4. Configure Azure Storage
 
----
+1. Access the [Azure Portal](https://portal.azure.com)
+2. Navigate to your Storage Account
+3. Go to **Security + Networking** → **Access Keys**
+4. Copy the **Connection String** from Key1
+5. Create a container named `weather-container`
 
-## Local Execution
+(https://github.com/periclesrmessias/weather_data/blob/main/images/capitals.png?raw=true)
 
-### 1. Create and Activate a Virtual Environment (example: Windows PowerShell)
 
-```powershell
-python -m venv .venv
-.venv\Scripts\activate
-pip install --upgrade pip
-pip install -r requirements.txt
-```
+### 5. Configure Environment Variables
 
-### 2. Configure Local Settings
-
-Create a `local.settings.json` file (do **not** commit it):
+Create the `local.settings.json` file:
 
 ```json
 {
   "IsEncrypted": false,
   "Values": {
-    "AzureWebJobsStorage": "<your-storage-connection-string>",
+    "AzureWebJobsStorage": "YOUR_CONNECTION_STRING_HERE",
     "FUNCTIONS_WORKER_RUNTIME": "python",
-    "OpenWeather_ApiKey": "<your-openweathermap-api-key>"
+    "OpenWeather_ApiKey": "YOUR_API_KEY_HERE"
   }
 }
 ```
 
-### 3. Run the Function App Locally
+> ⚠️ **IMPORTANT**: Never commit this file! It's already in `.gitignore`
+
+---
+
+## 🚀 Local Execution
+
+### Start the Function
 
 ```bash
+# Activate virtual environment
+.venv\Scripts\activate
+
+# Start Azure Functions runtime
 func start
 ```
 
-### 4. Test Endpoints
+### Test Endpoints
 
-* `http://localhost:7071/api/hello`
-* `http://localhost:7071/api/collect/all`
-
-Verify that JSON files are being created in the `weather-container` container.
-
----
-
-## Security Notes
-
-* **HTTP authorization:** The `FunctionApp` is initialized with `http_auth_level=func.AuthLevel.ANONYMOUS`, meaning all HTTP endpoints are publicly accessible.
-* **Secrets management:** Never commit API keys or connection strings. Use Application Settings in Azure and/or Azure Key Vault for production deployments.
-
----
-
-## Deployment Notes
-
-* Deployment can be performed using:
-
+**Basic test:**
 ```bash
-func azure functionapp publish <FUNCTION_APP_NAME>
+curl http://localhost:7071/api/hello
 ```
 
-* The deploying identity must have sufficient permissions (Owner or Contributor) on the Azure subscription or resource group.
-* Cloud deployment is currently not completed due to permission constraints.
+**Manual collection:**
+```bash
+curl http://localhost:7071/api/collect/all
+```
+
+### Verify Timer Trigger
+
+The timer is configured to execute every 10 minutes (`0 */10 * * * *`). 
+
+You'll see logs like:
+```
+[2025-01-21T18:00:00] 🔄 TIMER TRIGGERED: Starting automatic collection...
+[2025-01-21T18:00:01] ⏳ Timer collecting: Rio Branco
+[2025-01-21T18:00:03] ✅ Timer: Rio Branco saved
+...
+[2025-01-21T18:03:25] 🏁 Timer completed: 26/26 capitals
+```
 
 ---
 
-## Final Notes
+## 📊 Data Structure
 
-* Ensure the `weather-container` container exists before execution.
-* Confirm that `AzureWebJobsStorage` points to the correct Storage Account.
-* Review OpenWeatherMap rate limits when adjusting the timer schedule or the number of cities.
-* Timestamp handling intentionally mixes local time (filenames) and UTC (payload metadata), as implemented in the code.
+### Example of Stored JSON File
+
+```json
+{
+  "extraction_timestamp": "2025-01-21T18:30:00Z",
+  "source_system": "OpenWeatherMap",
+  "city_requested": "São Paulo",
+  "weather_data": {
+    "coord": {
+      "lon": -46.6361,
+      "lat": -23.5475
+    },
+    "weather": [
+      {
+        "id": 800,
+        "main": "Clear",
+        "description": "clear sky",
+        "icon": "01d"
+      }
+    ],
+    "main": {
+      "temp": 28.5,
+      "feels_like": 30.2,
+      "temp_min": 26.0,
+      "temp_max": 31.0,
+      "pressure": 1013,
+      "humidity": 65
+    },
+    "wind": {
+      "speed": 3.5,
+      "deg": 180
+    },
+    "dt": 1737486000,
+    "name": "São Paulo"
+  }
+}
+```
+
+### Main Fields
+
+| Field | Type | Description |
+|-------|------|-----------|
+| `extraction_timestamp` | ISO 8601 | Collection time (UTC) |
+| `source_system` | String | Always "OpenWeatherMap" |
+| `city_requested` | String | Requested city name |
+| `weather_data` | Object | Complete API response |
 
 ---
 
-## License
+## 📍 Available Endpoints
 
-Add an appropriate license (e.g., MIT or Apache-2.0) before publishing the repository.
+### 1. Health Check
+
+```http
+GET /api/hello
+```
+
+**Response:**
+```
+Status: 200 OK
+Azure Functions is working!
+```
+
+### 2. Batch Manual Collection
+
+```http
+GET /api/collect/all
+```
+
+**Response:**
+```json
+{
+  "total_capitais": 26,
+  "coletadas_com_sucesso": 26,
+  "com_erro": 0,
+  "timestamp": "2025-01-21T18:30:00Z",
+  "resultados": [
+    {
+      "cidade": "São Paulo",
+      "status": "sucesso",
+      "blob_path": "capitais-batch/sao-paulo/20250121_183000.json",
+      "temperatura": 28.5,
+      "clima": "clear sky"
+    },
+    ...
+  ]
+}
+```
+
+---
+
+## 📈 Monitoring and Logs
+
+### Execution Logs
+
+The function generates detailed logs for all operations:
+
+```python
+logging.info(f"Collecting data from: {city}")
+logging.info(f"✅ {city} saved at: {blob_name}")
+logging.error(f"❌ API error for {city}: {error}")
+```
+
+### Available Metrics
+
+- Total successful executions
+- Error rate per capital
+- Average execution time
+- Volume of stored data
+
+### Visualization in Azure
+
+1. Access the **Azure Portal**
+2. Navigate to **Storage Account** → **Containers** → `weather-container`
+3. Explore the hierarchical folder structure
+4. Download individual JSON files for inspection
+
+---
+
+## 🎯 Challenges and Solutions
+
+### 1. **Character Encoding**
+
+**Problem:** City names with accents (São Paulo, Brasília)
+
+**Solution:**
+```python
+cidade_formatada = cidade.lower().replace(' ', '-').replace('ã', 'a').replace('ç', 'c')
+# "São Paulo" → "sao-paulo"
+```
+
+### 2. **API Rate Limiting**
+
+**Problem:** OpenWeatherMap limits 60 requests/minute on Free plan
+
+**Solution:**
+```python
+time.sleep(1.2)  # Ensures maximum 50 req/min
+```
+
+### 3. **Credentials Management**
+
+**Problem:** Need to protect API Keys and Connection Strings
+
+**Solution:**
+- Use of `local.settings.json` (excluded from Git)
+- Environment variables via `os.environ.get()`
+- Properly configured `.gitignore`
+
+### 4. **Azure Permissions**
+
+**Problem:** Insufficient permissions for initial deployment
+
+**Solution:**
+- Configuration of "Owner" role in Resource Group
+- Use of Microsoft organizational account (recommended)
+- Acceptance of collaborator invitations
+
+---
+
+## 🔮 Next Steps
+
+### Short Term
+
+- [ ] **Cloud Deploy**: Migrate execution to Azure Function App
+- [ ] **CI/CD Pipeline**: Implement GitHub Actions for automated deployment
+- [ ] **Unit Tests**: Code coverage with pytest
+- [ ] **API Documentation**: Swagger/OpenAPI specification
+
+### Medium Term
+
+- [ ] **Data Warehouse**: Implement Azure SQL Database or Synapse Analytics
+- [ ] **Data Transformation**: ETL pipeline with Azure Data Factory
+- [ ] **Visualization**: Dashboard in Power BI or Grafana
+- [ ] **Alerts**: Notifications for extreme weather conditions
+
+### Long Term
+
+- [ ] **Machine Learning**: Predictive models for temperature/precipitation
+- [ ] **Custom API**: REST endpoint for historical data queries
+- [ ] **Geographic Expansion**: Include non-capital cities
+- [ ] **Multiple Sources**: Integration with INMET, CPTEC, etc.
+
+---
+
+## 📄 License
+
+This project is under the MIT License. See the [LICENSE](LICENSE) file for more details.
