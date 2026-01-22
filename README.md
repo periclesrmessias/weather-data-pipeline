@@ -23,7 +23,7 @@
 
 ---
 
-## 🎯 Overview
+## Overview
 
 This project implements a **real-time data pipeline** that automatically collects weather information from all 27 Brazilian state capitals using the OpenWeatherMap API. Data is processed and stored in JSON format in Azure Blob Storage, creating a data lake for future analysis.
 
@@ -38,7 +38,7 @@ This project implements a **real-time data pipeline** that automatically collect
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────────┐
@@ -71,7 +71,7 @@ This project implements a **real-time data pipeline** that automatically collect
 
 ---
 
-## ✨ Features
+## Features
 
 ### 🔄 Automated Collection
 - **Timer Trigger**: Automatic execution every 10 minutes
@@ -122,7 +122,7 @@ capitals/
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Technology | Version | Purpose |
 |------------|--------|-----------|
@@ -135,7 +135,7 @@ capitals/
 
 ---
 
-## 📦 Prerequisites
+## Prerequisites
 
 ### Accounts and Credentials
 
@@ -164,7 +164,7 @@ func --version
 
 ---
 
-## ⚙️ Environment Setup
+## Environment Setup
 
 ### 1. Clone the Repository
 
@@ -229,7 +229,7 @@ Create the `local.settings.json` file:
 
 ---
 
-## 🚀 Local Execution
+## Local Execution
 
 ### Start the Function
 
@@ -270,7 +270,7 @@ You'll see logs like:
 
 ---
 
-## 📊 Data Structure
+## Data Structure
 
 ### Example of Stored JSON File
 
@@ -321,7 +321,7 @@ You'll see logs like:
 
 ---
 
-## 📍 Available Endpoints
+## Available Endpoints
 
 ### 1. Health Check
 
@@ -363,7 +363,7 @@ GET /api/collect/all
 
 ---
 
-## 📈 Monitoring and Logs
+## Monitoring and Logs
 
 ### Execution Logs
 
@@ -394,7 +394,7 @@ logging.error(f"❌ API error for {city}: {error}")
 
 ---
 
-## 🎯 Challenges and Solutions
+## Challenges and Solutions
 
 ### 1. **Character Encoding**
 
