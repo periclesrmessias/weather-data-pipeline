@@ -119,8 +119,6 @@ capitals/
     └── ...
 ```
 
-![Azure Storage Folders](https://github.com/periclesrmessias/weather_data/blob/main/images/jsons.png?raw=true)
-
 ---
 
 ## 🛠️ Tech Stack
