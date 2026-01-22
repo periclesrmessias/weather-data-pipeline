@@ -208,7 +208,7 @@ requests
 4. Copy the **Connection String** from Key1
 5. Create a container named `weather-container`
 
-![Azure Container](https://github.com/periclesrmessias/weather_data/blob/main/images/capitals.png?raw=true)
+![Azure Container](https://github.com/periclesrmessias/weather_data/blob/main/images/weather-container.png?raw=true)
 
 ### 5. Configure Environment Variables
 
