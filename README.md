@@ -8,18 +8,18 @@
 ## 📋 Table of Contents
 
 - [Overview](#-overview)
-- [Architecture](#architecture)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Prerequisites](#prerequisites)
-- [Environment Setup](#environment-setup)
-- [Local Execution](#local-execution)
-- [Data Structure](#data-structure)
-- [Available Endpoints](#available-endpoints)
-- [Monitoring and Logs](#monitoring-and-logs)
-- [Challenges and Solutions](#challenges-and-solutions)
-- [Next Steps](#next-steps)
-- [License](#license)
+- [Architecture](#-architecture)
+- [Features](#-features)
+- [Tech Stack](#-tech-stack)
+- [Prerequisites](#-prerequisites)
+- [Environment Setup](#-environment-setup)
+- [Local Execution](#-local-execution)
+- [Data Structure](#-data-structure)
+- [Available Endpoints](#-available-endpoints)
+- [Monitoring and Logs](#-monitoring-and-logs)
+- [Challenges and Solutions](#-challenges-and-solutions)
+- [Next Steps](#-next-steps)
+- [License](#-license)
 
 ---
 
