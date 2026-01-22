@@ -25,7 +25,7 @@
 
 ## 🎯 Overview
 
-This project implements a **real-time data pipeline** that automatically collects weather information from all 26 Brazilian state capitals using the OpenWeatherMap API. Data is processed and stored in JSON format in Azure Blob Storage, creating a data lake for future analysis.
+This project implements a **real-time data pipeline** that automatically collects weather information from all 27 Brazilian state capitals using the OpenWeatherMap API. Data is processed and stored in JSON format in Azure Blob Storage, creating a data lake for future analysis.
 
 **Current Status:** The pipeline is fully functional and runs successfully in local development mode. All features work as intended, including automated data collection via timer trigger and manual collection via HTTP endpoints. Cloud deployment to Azure Function App was attempted but not completed due to Azure subscription permission challenges.
 
@@ -64,7 +64,7 @@ This project implements a **real-time data pipeline** that automatically collect
 ### Data Flow
 
 1. **Automatic Trigger**: Timer trigger activates the function every 10 minutes
-2. **Data Collection**: HTTP requests to OpenWeatherMap API (26 capitals)
+2. **Data Collection**: HTTP requests to OpenWeatherMap API (27 capitals)
 3. **Processing**: Data enrichment with metadata (timestamp, source, etc.)
 4. **Storage**: Upload to Azure Blob Storage in hierarchical structure
 5. **Logging**: Complete logging of all operations for monitoring
@@ -94,8 +94,8 @@ Manual data collection from all capitals on demand.
 **JSON Response:**
 ```json
 {
-  "total_capitais": 26,
-  "coletadas_com_sucesso": 26,
+  "total_capitais": 27,
+  "coletadas_com_sucesso": 27,
   "com_erro": 0,
   "timestamp": "2025-01-21T18:30:00Z",
   "resultados": [...]
@@ -265,7 +265,7 @@ You'll see logs like:
 [2025-01-21T18:00:01] ⏳ Timer collecting: Rio Branco
 [2025-01-21T18:00:03] ✅ Timer: Rio Branco saved
 ...
-[2025-01-21T18:03:25] 🏁 Timer completed: 26/26 capitals
+[2025-01-21T18:03:25] 🏁 Timer completed: 27/27 capitals
 ```
 
 ---
@@ -344,8 +344,8 @@ GET /api/collect/all
 **Response:**
 ```json
 {
-  "total_capitais": 26,
-  "coletadas_com_sucesso": 26,
+  "total_capitais": 27,
+  "coletadas_com_sucesso": 27,
   "com_erro": 0,
   "timestamp": "2025-01-21T18:30:00Z",
   "resultados": [
