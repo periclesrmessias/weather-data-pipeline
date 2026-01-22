@@ -1,11 +1,11 @@
-# 🌦️ Weather Data Pipeline - Azure + OpenWeatherMap
+# Weather Data Pipeline - Azure + OpenWeatherMap
 
 [![Azure Functions](https://img.shields.io/badge/Azure-Functions-0089D6?logo=microsoft-azure)](https://azure.microsoft.com/services/functions/)
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![OpenWeatherMap](https://img.shields.io/badge/API-OpenWeatherMap-orange)](https://openweathermap.org/)
 [![Azure Storage](https://img.shields.io/badge/Storage-Azure_Blob-0089D6)](https://azure.microsoft.com/services/storage/)
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Overview](#overview)
 - [Architecture](#architecture)
@@ -169,7 +169,7 @@ func --version
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/weather-data-pipeline.git
+git clone https://github.com/periclesrmessias/weather-data-pipeline.git
 cd weather-data-pipeline
 ```
 
@@ -445,7 +445,7 @@ time.sleep(1.2)  # Ensures maximum 50 req/min
 
 ---
 
-## 🔮 Next Steps
+## Next Steps
 
 ### Short Term
 
@@ -471,6 +471,6 @@ time.sleep(1.2)  # Ensures maximum 50 req/min
 
 ---
 
-## 📄 License
+## License
 
 This project is under the MIT License. See the [LICENSE](LICENSE) file for more details.
