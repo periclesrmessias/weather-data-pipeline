@@ -7,7 +7,7 @@
 
 ## 📋 Table of Contents
 
-- [Overview](#-overview)
+- [Overview](#overview)
 - [Architecture](#-architecture)
 - [Features](#-features)
 - [Tech Stack](#-tech-stack)
