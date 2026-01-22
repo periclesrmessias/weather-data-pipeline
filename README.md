@@ -119,7 +119,6 @@ capitals/
     └── ...
 ```
 
-![Azure Container](https://github.com/periclesrmessias/weather_data/blob/main/images/weather-container.png?raw=true)
 
 ---
 
@@ -388,6 +387,9 @@ logging.error(f"❌ API error for {city}: {error}")
 1. Access the **Azure Portal**
 2. Navigate to **Storage Account** (e.g., `apiweatherdata`) → **Containers** → `capitals`
 3. Explore the hierarchical folder structure
+
+![Azure Container](https://github.com/periclesrmessias/weather_data/blob/main/images/weather-container.png?raw=true)
+
 4. Download individual JSON files for inspection
 
 ---
